@@ -1,4 +1,4 @@
-# House Bell with Aquila example.
+# House Bell with Aquila example
 
 This is an example of a server application for the Aquila API.
 
@@ -7,7 +7,9 @@ The bell will be an Altair programmed with the example "Example_ButtonEvent".
 
 ### Installation
 
-``npm install aquila-bell``
+1. Clone this repository
+2. Enter the cloned folder: ``cd aquila-bell``
+3. Install dependencies: ``npm install``
 
 ### Use:
 
