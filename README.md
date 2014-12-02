@@ -30,7 +30,7 @@ on IFTTT to trigger different web services.
 
 ----
 
-# Tutorial: How to create an application for the Aquila API
+# Tutorial: How to create a server application for the Aquila API
 
 The Aquila Server provides a REST API and a web socket interface for making client apps.
 There are two main types of apps:
@@ -116,35 +116,62 @@ var mailContent = {
 };
 ```
 
+In the next function, we are requesting a list of devices that match the device name, and then subscribing another
+function to when the event EVENT_NAME of these devices is emitted; in this function we are simply printing in console that
+"Someone rang the bell", and sending the Email.
+
+```
+// will store list of selected devices
+var devices = null;
+
+var subscribeEvent = function()
+{
+    // Remove all previous listeners for avoiding duplicates
+    if(devices) devices.removeAllListeners(EVENT_NAME);
+
+    // # for searching by name
+    devices = aq.devices("#" + DEVICE_NAME);
+    
+    // subscribe
+    devices.on(EVENT_NAME, function(param)
+        {
+            console.log("Someone rang the bell");
+            // Send mail
+            transporter.sendMail(mailContent, function(error, info)
+            {
+                if(error){
+                    console.log(error);
+                }else{
+                    console.log("Message sent: " + info.response);
+                }
+            });
+        });
+};
+```
+
 Finally, the code that will be making the real work:
 Here, we are making a connection to the Aquila Server, passing user, password and a function that will be called
 when the connection is made. 
 
-Then, we are requesting a list of devices that match the device name, and then subscribing another
-function to when the event EVENT_NAME of these devices is emitted; in this function we are simply printing in console that
-"Someone rang the bell", and sending the Email.
+Then, we are calling the subscribeEvent() function, and then subscribing the same function for executing when any new device
+is added to the network, this is for robustness.
 ```
 // make connection and login to the Aquila Server
 aq.login("Admin", "Admin", function(err)
     {
-    	// attend any error on connection
+        // attend any error on connection
         if(err) return console.log(err.message);
 
-        // # for searching by name
-        aq.devices("#" + DEVICE_NAME).on(EVENT_NAME, function(param)
-        	{
-        		console.log("Someone rang the bell");
-        		// Send mail
-				transporter.sendMail(mailContent, function(error, info)
-				{
-					if(error){
-						console.log(error);
-					}else{
-						console.log("Message sent: " + info.response);
-					}
-				});
-        	});
+        subscribeEvent();
+
+        // Re-subscribe to events when a device is added
+        aq.manager.socket.on("deviceAdded", function()
+        {
+            subscribeEvent();
+        });
+        
     });
+
 ```
 
 ### Running the app

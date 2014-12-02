@@ -50,24 +50,45 @@ var mailContent = {
     text: "Someone rang the bell"
 };
 
+// will store list of selected devices
+var devices = null;
+
+var subscribeEvent = function()
+{
+    // Remove all previous listeners for avoiding duplicates
+    if(devices) devices.removeAllListeners(EVENT_NAME);
+
+    // # for searching by name
+    devices = aq.devices("#" + DEVICE_NAME);
+    
+    // subscribe
+    devices.on(EVENT_NAME, function(param)
+        {
+            console.log("Someone rang the bell");
+            // Send mail
+            transporter.sendMail(mailContent, function(error, info)
+            {
+                if(error){
+                    console.log(error);
+                }else{
+                    console.log("Message sent: " + info.response);
+                }
+            });
+        });
+};
+
 // make connection and login to the Aquila Server
 aq.login("Admin", "Admin", function(err)
     {
     	// attend any error on connection
         if(err) return console.log(err.message);
 
-        // # for searching by name
-        aq.devices("#" + DEVICE_NAME).on(EVENT_NAME, function(param)
-        	{
-        		console.log("Someone rang the bell");
-        		// Send mail
-				transporter.sendMail(mailContent, function(error, info)
-				{
-					if(error){
-						console.log(error);
-					}else{
-						console.log("Message sent: " + info.response);
-					}
-				});
-        	});
+        subscribeEvent();
+
+        // Re-subscribe to events when a device is added
+        aq.manager.socket.on("deviceAdded", function()
+        {
+            subscribeEvent();
+        });
+        
     });
